@@ -14,9 +14,11 @@
 -include_lib("amqp_client/include/amqp_client.hrl").
 
 all() -> [
-          guest_not_allowed,
-          private_user_not_allowed,
-          local_user_allowed
+          cert_dn_denied,
+          cert_dn_allowed,
+          cert_dn_vhost_access,
+          cert_dn_resource_access,
+          cert_dn_topic_access
          ].
 
 %% -------------------------------------------------------------------
@@ -30,35 +32,47 @@ init_per_suite(Config) ->
         [{rabbit, [
              {auth_backends, [
                  {rabbit_auth_backend_internal, [rabbit_auth_backend_internal,
-                                                 rabbit_auth_backend_ip_range]}
+                                                 rabbit_auth_backend_cert_regex]}
              ]}
         ]},
-        {rabbitmq_auth_backend_ip_range, [
-            {tag_masks,
-                [{'ip-private', [<<"::FFFF:192.168.0.0/112">>]},
-                 {'ip-local', [<<"::FFFF:127.0.0.1/112">>]}]},
-            {default_masks, [<<"::0/128">>]}
+        {rabbitmq_auth_backend_cert_regex, [
+            {rules, [
+                {".*CN=admin.*", [
+                    {vhost, ".*"},
+                    {configure, ".*"},
+                    {write, ".*"},
+                    {read, ".*"}
+                ]},
+                {".*CN=user1.*", [
+                    {vhost, "test_vhost"},
+                    {configure, "test_queue"},
+                    {write, "test_queue"},
+                    {read, "test_queue"}
+                ]},
+                {".*CN=user2.*", [
+                    {vhost, "restricted_vhost"},
+                    {configure, "restricted_queue"},
+                    {write, "restricted_queue"},
+                    {read, "restricted_queue"}
+                ]}
+            ]}
         ]}
     ],
     Config2 = rabbit_ct_helpers:merge_app_env(Config1, AuthConf),
     Steps = rabbit_ct_broker_helpers:setup_steps() ++
             rabbit_ct_client_helpers:setup_steps(),
     Config3 = rabbit_ct_helpers:run_setup_steps(Config2, Steps),
-    add_users(Config3),
+    setup_test_environment(Config3),
     Config3.
 
-add_users(Config) ->
-    Pass = <<"pass">>,
-    User0 = <<"local-user">>,
-    Tags0 = ['ip-local'],
-    ok = rabbit_ct_broker_helpers:add_user(Config, 0, User0, Pass),
-    ok = rabbit_ct_broker_helpers:set_user_tags(Config, 0, User0, Tags0),
-    ok = rabbit_ct_broker_helpers:set_full_permissions(Config, User0, <<"/">>),
-    User1 = <<"private-user">>,
-    Tags1 = ['ip-private'],
-    ok = rabbit_ct_broker_helpers:add_user(Config, 0, User1, Pass),
-    ok = rabbit_ct_broker_helpers:set_user_tags(Config, 0, User1, Tags1),
-    ok = rabbit_ct_broker_helpers:set_full_permissions(Config, User1, <<"/">>).
+setup_test_environment(Config) ->
+    %% Create test vhosts
+    ok = rabbit_ct_broker_helpers:add_vhost(Config, 0, <<"test_vhost">>),
+    ok = rabbit_ct_broker_helpers:add_vhost(Config, 0, <<"restricted_vhost">>),
+    
+    %% Create test queues
+    ok = rabbit_ct_broker_helpers:declare_queue(Config, 0, <<"test_queue">>, <<"test_vhost">>),
+    ok = rabbit_ct_broker_helpers:declare_queue(Config, 0, <<"restricted_queue">>, <<"restricted_vhost">>).
 
 end_per_suite(Config) ->
     Steps = rabbit_ct_client_helpers:teardown_steps() ++
@@ -77,22 +91,62 @@ init_per_testcase(Testcase, Config) ->
 end_per_testcase(Testcase, Config) ->
     rabbit_ct_helpers:testcase_finished(Config, Testcase).
 
-guest_not_allowed(Config) ->
+%% Test cases for cert_regex plugin
+
+cert_dn_denied(Config) ->
+    %% Test with a DN that doesn't match any rules
+    AuthzData = #{ssl_cert => [{subject, [{cn, "unknown_user"}]}]},
     User = <<"guest">>,
-    Pass = <<"guest">>,
-    {error, not_allowed} = rabbit_ct_client_helpers:open_unmanaged_connection(Config, 0, User, Pass).
+    VHost = <<"/">>,
+    
+    %% Should be denied access
+    false = rabbit_auth_backend_cert_regex:check_vhost_access(User, VHost, AuthzData).
 
-private_user_not_allowed(Config) ->
-    User = <<"private-user">>,
-    Pass = <<"pass">>,
-    {error, not_allowed} = rabbit_ct_client_helpers:open_unmanaged_connection(Config, 0, User, Pass).
+cert_dn_allowed(Config) ->
+    %% Test with a DN that matches admin rule
+    AuthzData = #{ssl_cert => [{subject, [{cn, "admin"}]}]},
+    User = <<"guest">>,
+    VHost = <<"/">>,
+    
+    %% Should be allowed access
+    true = rabbit_auth_backend_cert_regex:check_vhost_access(User, VHost, AuthzData).
 
-local_user_allowed(Config) ->
-    User = <<"local-user">>,
-    Pass = <<"pass">>,
-    case rabbit_ct_client_helpers:open_unmanaged_connection(Config, 0, User, Pass) of
-        Conn when is_pid(Conn) ->
-            ok = rabbit_ct_client_helpers:close_connection(Conn);
-        Error ->
-            error(Error)
-    end.
+cert_dn_vhost_access(Config) ->
+    %% Test vhost access with specific DN
+    AuthzData = #{ssl_cert => [{subject, [{cn, "user1"}]}]},
+    User = <<"guest">>,
+    
+    %% Should have access to test_vhost
+    true = rabbit_auth_backend_cert_regex:check_vhost_access(User, <<"test_vhost">>, AuthzData),
+    
+    %% Should not have access to restricted_vhost
+    false = rabbit_auth_backend_cert_regex:check_vhost_access(User, <<"restricted_vhost">>, AuthzData).
+
+cert_dn_resource_access(Config) ->
+    %% Test resource access with specific DN
+    AuthzData = #{ssl_cert => [{subject, [{cn, "user1"}]}]},
+    User = <<"guest">>,
+    Resource = #resource{virtual_host = <<"test_vhost">>, name = <<"test_queue">>, kind = queue},
+    
+    %% Should have configure, write, read access to test_queue
+    true = rabbit_auth_backend_cert_regex:check_resource_access(User, Resource, configure, AuthzData),
+    true = rabbit_auth_backend_cert_regex:check_resource_access(User, Resource, write, AuthzData),
+    true = rabbit_auth_backend_cert_regex:check_resource_access(User, Resource, read, AuthzData),
+    
+    %% Should not have access to restricted_queue
+    Resource2 = #resource{virtual_host = <<"restricted_vhost">>, name = <<"restricted_queue">>, kind = queue},
+    false = rabbit_auth_backend_cert_regex:check_resource_access(User, Resource2, configure, AuthzData).
+
+cert_dn_topic_access(Config) ->
+    %% Test topic access with specific DN
+    AuthzData = #{ssl_cert => [{subject, [{cn, "user2"}]}]},
+    User = <<"guest">>,
+    Resource = #resource{virtual_host = <<"restricted_vhost">>, name = <<"restricted_queue">>},
+    
+    %% Should have access to restricted_queue topic
+    true = rabbit_auth_backend_cert_regex:check_topic_access(User, Resource, write, AuthzData),
+    true = rabbit_auth_backend_cert_regex:check_topic_access(User, Resource, read, AuthzData),
+    
+    %% Should not have access to test_queue topic
+    Resource2 = #resource{virtual_host = <<"test_vhost">>, name = <<"test_queue">>},
+    false = rabbit_auth_backend_cert_regex:check_topic_access(User, Resource2, write, AuthzData).

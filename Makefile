@@ -1,11 +1,23 @@
-PROJECT = rabbitmq_auth_backend_ip_range
-PROJECT_DESCRIPTION = RabbitMQ IP Range Authentication Backend
+PROJECT = rabbitmq_auth_backend_cert_regex
+PROJECT_DESCRIPTION = RabbitMQ Certificate DN Regex Authentication Backend
 RABBITMQ_VERSION ?= v3.9.x
 
 define PROJECT_ENV
 [
-	{tag_masks, [{'ip-private', [<<"::FFFF:192.168.0.0/112">>]}]},
-	{default_masks, [<<"::0/0">>]}
+	{rules, [
+		{".*CN=admin.*", [
+			{vhost, ".*"},
+			{configure, ".*"},
+			{write, ".*"},
+			{read, ".*"}
+		]},
+		{".*CN=user1.*", [
+			{vhost, "test_vhost"},
+			{configure, "test_queue"},
+			{write, "test_queue"},
+			{read, "test_queue"}
+		]}
+	]}
 ]
 endef
 
