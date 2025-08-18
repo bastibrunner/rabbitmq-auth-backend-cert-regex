@@ -127,7 +127,6 @@ RABBITMQ_BUILTIN = \
 RABBITMQ_COMMUNITY = \
 	rabbitmq_auth_backend_amqp \
 	rabbitmq_boot_steps_visualiser \
-	rabbitmq_delayed_message_exchange \
 	rabbitmq_lvc_exchange \
 	rabbitmq_management_exchange \
 	rabbitmq_management_themes \
@@ -139,7 +138,6 @@ RABBITMQ_COMMUNITY = \
 community_dep = git git@github.com:rabbitmq/$1.git $(if $2,$2,main)
 dep_rabbitmq_auth_backend_amqp = $(call community_dep,rabbitmq-auth-backend-amqp)
 dep_rabbitmq_boot_steps_visualiser = $(call community_dep,rabbitmq-boot-steps-visualiser,master)
-dep_rabbitmq_delayed_message_exchange = $(call community_dep,rabbitmq-delayed-message-exchange)
 dep_rabbitmq_lvc_exchange = $(call community_dep,rabbitmq-lvc-exchange)
 dep_rabbitmq_management_exchange = $(call community_dep,rabbitmq-management-exchange)
 dep_rabbitmq_management_themes = $(call community_dep,rabbitmq-management-themes,master)

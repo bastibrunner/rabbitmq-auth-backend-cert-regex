@@ -1,5 +1,5 @@
 module(
-    name = "rabbitmq_delayed_message_exchange",
+    name = "rabbit_auth_backend_cert_regex",
     version = "3.13.0",
 )
 

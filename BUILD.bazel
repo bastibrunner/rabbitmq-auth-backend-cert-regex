@@ -99,9 +99,9 @@ erlang_app(
     name = "erlang_app",
     srcs = [":all_srcs"],
     hdrs = [":public_hdrs"],
-    app_description = "RabbitMQ Delayed Message Exchange",
-    app_module = "rabbit_delayed_message_app",
-    app_name = "rabbitmq_delayed_message_exchange",
+    app_description = "RabbitMQ Auth Backend Cert Regex",
+    app_module = "rabbit_auth_backend_cert_regex",
+    app_name = "rabbitmq_auth_backend_cert_regex",
     app_version = module_version(),
     beam_files = [":beam_files"],
     license_files = [":license_files"],
@@ -113,7 +113,7 @@ erlang_app(
 )
 
 alias(
-    name = "rabbitmq_delayed_message_exchange",
+    name = "rabbitmq_auth_backend_cert_regex",
     actual = ":erlang_app",
     visibility = ["//visibility:public"],
 )
@@ -122,7 +122,7 @@ test_erlang_app(
     name = "test_erlang_app",
     srcs = [":all_srcs"],
     hdrs = [":public_and_private_hdrs"],
-    app_name = "rabbitmq_delayed_message_exchange",
+    app_name = "rabbitmq_auth_backend_cert_regex",
     beam_files = [":test_beam_files"],
     license_files = [":license_files"],
     priv = [":priv"],
