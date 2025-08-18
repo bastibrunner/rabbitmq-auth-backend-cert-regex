@@ -1,5 +1,5 @@
 module(
-    name = "rabbitmq_auth_backend_cert_regex",
+    name = "rabbitmq_delayed_message_exchange",
     version = "3.13.0",
 )
 
@@ -25,5 +25,36 @@ use_repo(
     "erlang_config",
 )
 
-# Remove the problematic rabbitmq-server dependency and use a direct approach
-# This avoids the rabbitmq_osiris module issue
+bazel_dep(
+    name = "rabbitmq-server",
+    version = "3.13.0",
+)
+
+archive_override(
+    module_name = "rabbitmq-server",
+    strip_prefix = "rabbitmq-server-3.13.x",
+    urls = [
+        "https://github.com/rabbitmq/rabbitmq-server/archive/refs/heads/v3.13.x.zip",
+    ],
+)
+
+elixir_config = use_extension(
+    "@rabbitmq-server//bazel/bzlmod:extensions.bzl",
+    "elixir_config",
+    dev_dependency = True,
+)
+
+use_repo(
+    elixir_config,
+    "elixir_config",
+)
+
+rbe = use_extension(
+    "@rabbitmq-server//bazel/bzlmod:extensions.bzl",
+    "rbe",
+)
+
+use_repo(
+    rbe,
+    "rbe",
+)
