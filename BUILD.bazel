@@ -61,6 +61,7 @@ plt(
 erlang_app(
     name = "erlang_app",
     srcs = glob(["src/**/*.erl"]),
+    private_hdrs = [],
     app_description = "RabbitMQ Auth Backend Cert Regex Plugin",
     app_module = "rabbit_auth_backend_cert_regex_app",
     app_name = "rabbitmq_auth_backend_cert_regex",
