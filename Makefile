@@ -1,10 +1,8 @@
 PROJECT = rabbitmq_auth_backend_cert_regex
 PROJECT_DESCRIPTION = RabbitMQ Certificate DN Regex Authentication Backend
-# PROJECT_MOD = rabbit_auth_backend_cert_regex_app
-RABBITMQ_VERSION ?= v3.13.x
-
-current_rmq_ref = $(RABBITMQ_VERSION)
-base_rmq_ref = master
+RABBITMQ_VERSION ?= v3.10.x
+current_rmq_ref = v3.10.8
+base_rmq_ref = v3.10.8
 
 define PROJECT_ENV
 [
@@ -26,15 +24,22 @@ define PROJECT_ENV
 endef
 
 define PROJECT_APP_EXTRA_KEYS
-	{broker_version_requirements, ["3.13.0"]}
+	{broker_version_requirements, ["3.10.0"]}
 endef
 
 DEPS = rabbit_common rabbit
-TEST_DEPS = ct_helper rabbitmq_ct_helpers rabbitmq_ct_client_helpers amqp_client
-dep_ct_helper = git https://github.com/extend/ct_helper.git master
+TEST_DEPS = rabbitmq_ct_helpers rabbitmq_ct_client_helpers amqp_client
 
 DEP_EARLY_PLUGINS = rabbit_common/mk/rabbitmq-early-plugin.mk
 DEP_PLUGINS = rabbit_common/mk/rabbitmq-plugin.mk
+
+# FIXME: Use erlang.mk patched for RabbitMQ, while waiting for PRs to be
+# reviewed and merged.
+
+ERLANG_MK_REPO = https://github.com/rabbitmq/erlang.mk.git
+ERLANG_MK_COMMIT = rabbitmq-tmp
+
+include rabbitmq-components.mk
 
 dep_amqp_client                = git_rmq-subfolder rabbitmq-erlang-client $(RABBITMQ_VERSION)
 dep_rabbit_common              = git_rmq-subfolder rabbitmq-common $(RABBITMQ_VERSION)
@@ -42,8 +47,4 @@ dep_rabbit                     = git_rmq-subfolder rabbitmq-server $(RABBITMQ_VE
 dep_rabbitmq_ct_client_helpers = git_rmq-subfolder rabbitmq-ct-client-helpers $(RABBITMQ_VERSION)
 dep_rabbitmq_ct_helpers        = git_rmq-subfolder rabbitmq-ct-helpers $(RABBITMQ_VERSION)
 
-ERLANG_MK_REPO = https://github.com/rabbitmq/erlang.mk.git
-ERLANG_MK_COMMIT = rabbitmq-tmp
-
-include rabbitmq-components.mk
 include erlang.mk
