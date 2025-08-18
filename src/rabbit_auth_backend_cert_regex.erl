@@ -24,7 +24,7 @@ user_login_authorization(_, _) -> {ok, none}.
 
 %%--------------------------------------------------------------------
 %% VHost Access Check
-check_vhost_access(User, VHost, AuthzData) ->
+check_vhost_access(_User, VHost, AuthzData) ->
     DN = extract_username(AuthzData),
     Rules = get_rules(),
     case match_rules(DN, Rules, vhost, VHost) of
@@ -36,7 +36,7 @@ check_vhost_access(User, VHost, AuthzData) ->
 
 %%--------------------------------------------------------------------
 %% Resource Access Check
-check_resource_access(User, #resource{virtual_host = VHost, name = Name, kind = Kind}, Permission, AuthzData) ->
+check_resource_access(_User, #resource{virtual_host = _VHost, name = Name, kind = Kind}, Permission, AuthzData) ->
     DN = extract_username(AuthzData),
     Rules = get_rules(),
     case match_rules(DN, Rules, Permission, Name) of
@@ -48,7 +48,7 @@ check_resource_access(User, #resource{virtual_host = VHost, name = Name, kind = 
 
 %%--------------------------------------------------------------------
 %% Topic Access Check
-check_topic_access(User, #resource{virtual_host = VHost, name = Name}, Permission, AuthzData) ->
+check_topic_access(_User, #resource{virtual_host = _VHost, name = Name}, Permission, AuthzData) ->
     DN = extract_username(AuthzData),
     Rules = get_rules(),
     case match_rules(DN, Rules, Permission, Name) of

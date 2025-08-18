@@ -1,0 +1,29 @@
+module(
+    name = "rabbitmq_auth_backend_cert_regex",
+    version = "3.13.0",
+)
+
+bazel_dep(
+    name = "gazelle",
+    version = "0.29.0",
+    repo_name = "bazel_gazelle",
+)
+
+bazel_dep(
+    name = "rules_erlang",
+    version = "3.10.6",
+)
+
+erlang_config = use_extension(
+    "@rules_erlang//bzlmod:extensions.bzl",
+    "erlang_config",
+    dev_dependency = True,
+)
+
+use_repo(
+    erlang_config,
+    "erlang_config",
+)
+
+# Remove the problematic rabbitmq-server dependency and use a direct approach
+# This avoids the rabbitmq_osiris module issue
