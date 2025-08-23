@@ -4,6 +4,10 @@ RABBITMQ_VERSION ?= v3.10.x
 current_rmq_ref = v3.10.8
 base_rmq_ref = v3.10.8
 
+# Force dependencies to be installed in local deps directory
+# This prevents the umbrella project detection from overriding DEPS_DIR
+DEPS_DIR = $(CURDIR)/deps
+
 define PROJECT_ENV
 [
 	{rules, [
