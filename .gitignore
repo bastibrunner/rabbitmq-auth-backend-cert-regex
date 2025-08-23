@@ -16,3 +16,5 @@ logs/
 plugins/
 sbin/
 tmp/
+.hex/
+.mix/
