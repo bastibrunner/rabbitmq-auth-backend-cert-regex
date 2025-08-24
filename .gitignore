@@ -18,3 +18,4 @@ sbin/
 tmp/
 .hex/
 .mix/
+.erlang.cookie
