@@ -8,25 +8,6 @@ base_rmq_ref = v3.10.8
 # This prevents the umbrella project detection from overriding DEPS_DIR
 DEPS_DIR = $(CURDIR)/deps
 
-define PROJECT_ENV
-[
-	{rules, [
-		{".*CN=admin.*", [
-			{vhost, ".*"},
-			{configure, ".*"},
-			{write, ".*"},
-			{read, ".*"}
-		]},
-		{".*CN=user1.*", [
-			{vhost, "test_vhost"},
-			{configure, "test_queue"},
-			{write, "test_queue"},
-			{read, "test_queue"}
-		]}
-	]}
-]
-endef
-
 define PROJECT_APP_EXTRA_KEYS
 	{broker_version_requirements, ["3.10.0"]}
 endef
