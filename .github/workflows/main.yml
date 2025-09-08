@@ -23,17 +23,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y rsync
       - name: Fetch dependencies
         run: make deps
-      - name: Install Elixir dependencies
-        run: |
-          for dep in deps/*/; do
-            if [ -f "$dep/mix.exs" ]; then
-              echo "Compiling Elixir dependency: $dep"
-              cd "$dep"
-              mix deps.get
-              mix compile
-              cd ../..
-            fi
-          done
       - name: Compile
         run: make
       - name: Upload artifact
